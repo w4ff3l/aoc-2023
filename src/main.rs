@@ -7,15 +7,6 @@ fn main() {
     println!("{}", day1_c2());
 }
 
-fn day1_c2() -> i32 {
-    read_to_string("puzzle-input-c1")
-        .unwrap()
-        .lines()
-        .map(String::from)
-        .map(parse_number_c2)
-        .sum()
-}
-
 fn day1_c1() -> i32 {
     read_to_string("puzzle-input-c1")
         .unwrap()
@@ -23,6 +14,28 @@ fn day1_c1() -> i32 {
         .map(String::from)
         .map(parse_number_c1)
         .sum()
+}
+
+fn day1_c2() -> i32 {
+    read_to_string("puzzle-input-c2")
+        .unwrap()
+        .lines()
+        .map(String::from)
+        .map(parse_number_c2)
+        .sum()
+}
+
+fn parse_number_c1(str: String) -> i32 {
+    let index_first_number = str.find(|c: char| c.is_digit(10)).unwrap();
+    let index_last_number = str.rfind(|c: char| c.is_digit(10)).unwrap();
+
+    let number_str = format!(
+        "{}{}",
+        str.chars().nth(index_first_number).unwrap(),
+        str.chars().nth(index_last_number).unwrap()
+    );
+
+    number_str.parse::<i32>().unwrap()
 }
 
 fn parse_number_c2(str: String) -> i32 {
@@ -50,14 +63,17 @@ fn parse_number_c2(str: String) -> i32 {
     let mut findings: HashMap<usize, usize> = HashMap::new();
 
     for (i_str_num, str_num) in str_nums.iter().enumerate() {
-        match str.find(str_num) {
-            Some(i) => findings.insert(i, i_str_num),
-            None => None,
-        };
+        for indice in str.match_indices(str_num).map(|(i, _)| i).collect::<Vec<_>>() {
+            findings.insert(indice, i_str_num);
+        }
     }
+
+    println!("{:?}", findings);
 
     let min_index_in_string = findings.keys().min().unwrap();
     let max_index_in_string = findings.keys().max().unwrap();
+
+    println!("{:?} {:?}", min_index_in_string, max_index_in_string);
 
     let min_index_in_nums = findings.get(min_index_in_string).unwrap();
     let max_index_in_nums = findings.get(max_index_in_string).unwrap();
@@ -73,20 +89,10 @@ fn parse_number_c2(str: String) -> i32 {
         max_string = &str_nums[*max_index_in_nums + 9];
     }
 
-    let number_str = format!("{}{}", min_string.clone(), max_string.clone());
-
-    number_str.parse::<i32>().unwrap()
-}
-
-fn parse_number_c1(str: String) -> i32 {
-    let index_first_number = str.find(|c: char| c.is_digit(10)).unwrap();
-    let index_last_number = str.rfind(|c: char| c.is_digit(10)).unwrap();
-
-    let number_str = format!(
-        "{}{}",
-        str.chars().nth(index_first_number).unwrap(),
-        str.chars().nth(index_last_number).unwrap()
-    );
+    let mut number_str = format!("{}{}", min_string.clone(), max_string.clone());
+    if min_index_in_string == max_index_in_string {
+        number_str = format!("{}", min_string.clone());
+    }
 
     number_str.parse::<i32>().unwrap()
 }
@@ -110,8 +116,9 @@ fn finds_numbers_in_string_c2() {
     let test_string_5 = "4nineeightseven2".to_string();
     let test_string_6 = "zoneight234".to_string();
     let test_string_7 = "7pqrstsixteen".to_string();
-    let test_string_8 = "eighthree".to_string();
+    let test_string_8 = "eightwothree".to_string();
     let test_string_9 = "fourfourfour".to_string();
+    let test_string_10 = "mbvxvl2".to_string();
 
     let number = parse_number_c2(test_string);
     let number_1 = parse_number_c2(test_string_1);
@@ -123,6 +130,7 @@ fn finds_numbers_in_string_c2() {
     let number_7 = parse_number_c2(test_string_7);
     let number_8 = parse_number_c2(test_string_8);
     let number_9 = parse_number_c2(test_string_9);
+    let number_10 = parse_number_c2(test_string_10);
 
     assert_eq!(number, 95);
     assert_eq!(number_1, 29);
@@ -134,4 +142,5 @@ fn finds_numbers_in_string_c2() {
     assert_eq!(number_7, 76);
     assert_eq!(number_8, 83);
     assert_eq!(number_9, 44);
+    assert_eq!(number_10, 2);
 }
