@@ -1,4 +1,7 @@
-use std::{collections::HashMap, fs::read_to_string};
+use std::{
+    fs::read_to_string,
+    ops::{Index, Sub},
+};
 
 fn main() {
     println!("c1");
@@ -39,7 +42,7 @@ fn parse_number_c1(str: String) -> i32 {
 }
 
 fn parse_number_c2(str: String) -> i32 {
-    let str_nums = vec![
+    let number_vec = vec![
         "one".to_string(),
         "two".to_string(),
         "three".to_string(),
@@ -60,40 +63,77 @@ fn parse_number_c2(str: String) -> i32 {
         "9".to_string(),
     ];
 
-    let mut findings: HashMap<usize, usize> = HashMap::new();
+    let mut index_firt_number = 0;
+    let mut first_number = "";
+    let mut matched = false;
+    let mut index = 0;
 
-    for (i_str_num, str_num) in str_nums.iter().enumerate() {
-        for indice in str.match_indices(str_num).map(|(i, _)| i).collect::<Vec<_>>() {
-            findings.insert(indice, i_str_num);
+    while !matched {
+        let sub = &str[0..index];
+
+        for num in &number_vec {
+            let possible_indice = sub.find(num);
+            match possible_indice {
+                Some(i) => {
+                    index_firt_number = i;
+                    first_number = &num;
+                    matched = true;
+                }
+                None => (),
+            }
+        }
+
+        index += 1;
+    }
+    // println!("First: {:?}", first_number);
+
+    let mut index_last_number = 0;
+    let mut last_number = "";
+    matched = false;
+    index = str.len();
+
+    while !matched {
+        let sub = &str[index..str.len()];
+
+        for num in &number_vec {
+            let possible_indice = sub.find(num);
+            match possible_indice {
+                Some(i) => {
+                    index_last_number = str.len() - 1 - i;
+                    last_number = &num;
+                    matched = true;
+                }
+                None => (),
+            }
+        }
+
+        if index > 0 {
+            index -= 1;
+        } else {
+            matched = true;
         }
     }
+    // println!("Second: {:?}", last_number);
+    // println!("Indices: {:?} {:?}", index_firt_number, index_last_number);
 
-    println!("{:?}", findings);
-
-    let min_index_in_string = findings.keys().min().unwrap();
-    let max_index_in_string = findings.keys().max().unwrap();
-
-    println!("{:?} {:?}", min_index_in_string, max_index_in_string);
-
-    let min_index_in_nums = findings.get(min_index_in_string).unwrap();
-    let max_index_in_nums = findings.get(max_index_in_string).unwrap();
-
-    let mut min_string = &str_nums[*min_index_in_nums];
-    let mut max_string = &str_nums[*max_index_in_nums];
-
-    if min_string.len() > 1 {
-        min_string = &str_nums[*min_index_in_nums + 9];
+    if first_number.len() > 1 {
+        let index = number_vec.iter().position(|x| x == first_number).unwrap();
+        first_number = &number_vec[index + 9];
     }
 
-    if max_string.len() > 1 {
-        max_string = &str_nums[*max_index_in_nums + 9];
+    if last_number.len() > 1 {
+        let index = number_vec.iter().position(|x| x == last_number).unwrap();
+        last_number = &number_vec[index + 9];
     }
 
-    let mut number_str = format!("{}{}", min_string.clone(), max_string.clone());
-    if min_index_in_string == max_index_in_string {
-        number_str = format!("{}", min_string.clone());
+    let mut number_str = format!("{}{}", first_number, last_number);
+
+    if index_firt_number == index_last_number {
+        number_str = format!("{}", first_number);
     }
 
+    println!("Given: {:?}", str);
+    println!("Result: {:?}", number_str);
     number_str.parse::<i32>().unwrap()
 }
 
@@ -108,6 +148,35 @@ fn finds_numbers_in_string_c1() {
 
 #[test]
 fn finds_numbers_in_string_c2() {
+    let test_string_1 = "two1nine".to_string();
+    let test_string_2 = "eightwothree".to_string();
+    let test_string_3 = "abcone2threexyz".to_string();
+    let test_string_4 = "xtwone3four".to_string();
+    let test_string_5 = "4nineeightseven2".to_string();
+    let test_string_6 = "zoneight234".to_string();
+    let test_string_7 = "7pqrstsixteen".to_string();
+
+    let number_1 = parse_number_c2(test_string_1);
+    let number_2 = parse_number_c2(test_string_2);
+    let number_3 = parse_number_c2(test_string_3);
+    let number_4 = parse_number_c2(test_string_4);
+    let number_5 = parse_number_c2(test_string_5);
+    let number_6 = parse_number_c2(test_string_6);
+    let number_7 = parse_number_c2(test_string_7);
+
+    assert_eq!(number_1, 29);
+    assert_eq!(number_2, 83);
+    assert_eq!(number_3, 13);
+    assert_eq!(number_4, 24);
+    assert_eq!(number_5, 42);
+    assert_eq!(number_6, 14);
+    assert_eq!(number_7, 76);
+
+    assert_eq!(number_1 + number_2 + number_3 + number_4 + number_5 + number_6 + number_7, 281);
+}
+
+#[test]
+fn finds_numbers_in_string_c2_custom() {
     let test_string = "nine2rsotai98twosevenfive".to_string();
     let test_string_1 = "two1nine".to_string();
     let test_string_2 = "eightwothree".to_string();
