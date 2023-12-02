@@ -13,11 +13,11 @@ const MAX_CUBES_RED: Cubes = Cubes {
     color: Color::Red,
 };
 const MAX_CUBES_GREEN: Cubes = Cubes {
-    quantity: 12,
+    quantity: 13,
     color: Color::Green,
 };
 const MAX_CUBES_BLUE: Cubes = Cubes {
-    quantity: 12,
+    quantity: 14,
     color: Color::Blue,
 };
 
