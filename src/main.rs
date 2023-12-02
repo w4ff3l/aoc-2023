@@ -28,7 +28,7 @@ fn main() {
 }
 
 fn accumulate_possible_games(input: &str) -> i32 {
-    let games = parse_games(&input);
+    let games = parse_games(input);
 
     // Determine which games are possible evaluated by the given pulls.
     // The bag has an initial configuration:
