@@ -1,7 +1,4 @@
-use std::{
-    fs::read_to_string,
-    ops::{Index, Sub},
-};
+use std::fs::read_to_string;
 
 fn main() {
     println!("c1");
@@ -29,8 +26,8 @@ fn day1_c2() -> i32 {
 }
 
 fn parse_number_c1(str: String) -> i32 {
-    let index_first_number = str.find(|c: char| c.is_digit(10)).unwrap();
-    let index_last_number = str.rfind(|c: char| c.is_digit(10)).unwrap();
+    let index_first_number = str.find(|c: char| c.is_ascii_digit()).unwrap();
+    let index_last_number = str.rfind(|c: char| c.is_ascii_digit()).unwrap();
 
     let number_str = format!(
         "{}{}",
@@ -63,7 +60,6 @@ fn parse_number_c2(str: String) -> i32 {
         "9".to_string(),
     ];
 
-    let mut index_firt_number = 0;
     let mut first_number = "";
     let mut matched = false;
     let mut index = 0;
@@ -72,22 +68,15 @@ fn parse_number_c2(str: String) -> i32 {
         let sub = &str[0..index];
 
         for num in &number_vec {
-            let possible_indice = sub.find(num);
-            match possible_indice {
-                Some(i) => {
-                    index_firt_number = i;
-                    first_number = &num;
-                    matched = true;
-                }
-                None => (),
+            if sub.contains(num) {
+                first_number = &num;
+                matched = true;
             }
         }
 
         index += 1;
     }
-    // println!("First: {:?}", first_number);
 
-    let mut index_last_number = 0;
     let mut last_number = "";
     matched = false;
     index = str.len();
@@ -96,14 +85,9 @@ fn parse_number_c2(str: String) -> i32 {
         let sub = &str[index..str.len()];
 
         for num in &number_vec {
-            let possible_indice = sub.find(num);
-            match possible_indice {
-                Some(i) => {
-                    index_last_number = str.len() - 1 - i;
-                    last_number = &num;
-                    matched = true;
-                }
-                None => (),
+            if sub.contains(num) {
+                last_number = &num;
+                matched = true;
             }
         }
 
@@ -113,8 +97,6 @@ fn parse_number_c2(str: String) -> i32 {
             matched = true;
         }
     }
-    // println!("Second: {:?}", last_number);
-    // println!("Indices: {:?} {:?}", index_firt_number, index_last_number);
 
     if first_number.len() > 1 {
         let index = number_vec.iter().position(|x| x == first_number).unwrap();
@@ -126,14 +108,8 @@ fn parse_number_c2(str: String) -> i32 {
         last_number = &number_vec[index + 9];
     }
 
-    let mut number_str = format!("{}{}", first_number, last_number);
+    let number_str = format!("{}{}", first_number, last_number);
 
-    if index_firt_number == index_last_number {
-        number_str = format!("{}", first_number);
-    }
-
-    println!("Given: {:?}", str);
-    println!("Result: {:?}", number_str);
     number_str.parse::<i32>().unwrap()
 }
 
