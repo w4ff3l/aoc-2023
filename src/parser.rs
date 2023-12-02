@@ -146,7 +146,6 @@ mod tests {
         
         // when
         let result = parse_games(raw);
-        println!("{:?}", result);
 
         // then
         assert_eq!(result, expected);
