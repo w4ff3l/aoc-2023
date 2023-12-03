@@ -1,4 +1,4 @@
-use std::fs::read_to_string;
+use std::{fs::read_to_string, i32};
 
 const SYMBOLS: [char; 10] = ['#', '$', '%', '&', '*', '+', '-', '/', '=', '@'];
 const NUMBERS: [char; 10] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
@@ -6,11 +6,164 @@ const NUMBERS: [char; 10] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 fn main() {
     let input = read_to_string("puzzle-input").unwrap();
 
-    let accumulated_part_numbers = sum_all_part_numbers(&input);
+    let accumulated_part_numbers = sum_all_part_numbers_c1(&input);
     println!("Accumulated part numbers: {}", accumulated_part_numbers);
+
+    let accumulated_gear_ratios = sum_all_gear_ratios_c2(&input);
+    println!("Accumulated gear ratios: {}", accumulated_gear_ratios);
 }
 
-fn sum_all_part_numbers(input: &str) -> i32 {
+fn sum_all_gear_ratios_c2(input: &str) -> i32 {
+    // # Given Problem
+    //
+    // - Gear ratios are connected via gears (*)
+    // - Connected gear ratios need to be multiplied
+    // - Multiplied ratios musst me accumulated
+    //
+    // # Algorithm
+    //
+    // - Buffer current line and the two next lines
+    // - Find numbers in current line
+    // - Find gears in second line
+    // - Connect gear with numbers from first line
+    // - Find numbers in third line
+    // - Connect gears with numbers from third line
+    // - Mix and match?
+
+    let mut lines = input.lines().peekable();
+    let mut accumulated_gear_ratios = 0;
+
+    let mut line_index = 0;
+    let mut gears: Vec<Gear> = Vec::new();
+    let mut grid_numbers: Vec<GridNumber> = Vec::new();
+
+    while let Some(line) = lines.next() {
+        let gears_in_current_line = find_gears_in_line(line_index, line);
+        let numbers_in_current_line = find_numbers_in_line(line_index, line);
+
+        gears.extend(gears_in_current_line);
+        grid_numbers.extend(numbers_in_current_line);
+
+        line_index += 1;
+    }
+
+    // println!("{:?}", gears);
+    // println!("{:?}", grid_numbers);
+
+    for gear in gears {
+        let adjacent_grid_numbers = gear.find_adjacent_grid_numbers(line_index, &grid_numbers);
+
+        if adjacent_grid_numbers.len() == 2 {
+            accumulated_gear_ratios += adjacent_grid_numbers
+                .iter()
+                .map(|grid_number| grid_number.number)
+                .fold(1, |acc, x| acc * x);
+        }
+    }
+
+    accumulated_gear_ratios
+}
+
+#[derive(Debug)]
+struct Gear {
+    row: usize,
+    column: usize,
+}
+
+impl Gear {
+    fn find_adjacent_grid_numbers(
+        &self,
+        lines_len: usize,
+        grid_numbers: &Vec<GridNumber>,
+    ) -> Vec<GridNumber> {
+        let mut adjacent_grid_numbers: Vec<GridNumber> = Vec::new();
+
+        for grid_number in grid_numbers {
+            let possible_coords = grid_number.get_possible_coords();
+            println!("Possible coords {:?}", possible_coords);
+            println!("Row: {:?} Column: {:?}", self.row, self.column);
+
+            let is_start = self.row == 0;
+            let is_end = self.row == lines_len;
+            
+            if (!is_start && possible_coords.contains(&(self.row - 1, self.column - 1))) // NW
+                || (!is_start && (possible_coords.contains(&(self.row - 1, self.column)))) // N
+                || (!is_start && possible_coords.contains(&(self.row - 1, self.column + 1))) // NE
+                || possible_coords.contains(&(self.row, self.column + 1)) // E
+                || (!is_end && possible_coords.contains(&(self.row + 1, self.column + 1))) // SE
+                || (!is_end && possible_coords.contains(&(self.row + 1, self.column))) // S
+                || (!is_end && possible_coords.contains(&(self.row + 1, self.column - 1))) // SW
+                || possible_coords.contains(&(self.row, self.column - 1)) // W
+            {
+                println!("Grid number being pushed {:?}", grid_number);
+                adjacent_grid_numbers.push(grid_number.clone());
+            }
+        }
+
+        println!("Grid numbers {:?}", adjacent_grid_numbers);
+        adjacent_grid_numbers
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct GridNumber {
+    row: usize,
+    column_start: usize,
+    column_end: usize,
+    number: i32,
+}
+
+impl GridNumber {
+    fn get_possible_coords(self) -> Vec<(usize, usize)> {
+        let mut possible_coords: Vec<(usize, usize)> = Vec::new();
+        for i in self.column_start..self.column_end + 1 {
+            possible_coords.push((self.row, i));
+        }
+        possible_coords
+    }
+}
+
+fn find_gears_in_line(row: usize, line: &str) -> Vec<Gear> {
+    let mut gears: Vec<Gear> = Vec::new();
+
+    for (i, char) in line.char_indices() {
+        if char == '*' {
+            gears.push(Gear { row, column: i });
+        }
+    }
+
+    gears
+}
+
+#[cfg(test)]
+mod tests_c2 {
+    use crate::{sum_all_gear_ratios_c2, GridNumber};
+
+    #[test]
+    fn returns_possible_coords() {
+        let grid_number = GridNumber{ row: 0, column_start: 0, column_end: 1, number: 10 };
+
+        let result = grid_number.get_possible_coords();
+
+        assert!(result.contains(&(0,0)));
+        assert!(result.contains(&(0,1)));
+    }
+
+    #[test]
+    fn add_200() {
+        let input = "10*10..5.\n\
+                     .......*.\n\
+                     100..20..\n\
+                     ..*......\n\
+                     .2.......";
+
+        let result = sum_all_gear_ratios_c2(input);
+
+        assert_eq!(result, 400);
+    }
+}
+
+fn sum_all_part_numbers_c1(input: &str) -> i32 {
     // # Given Problem
     //
     // - All part numbers need to be found in the input.
@@ -50,9 +203,10 @@ fn sum_all_part_numbers(input: &str) -> i32 {
     let mut accumulated_part_numbers = 0;
     let mut previous_line = lines.peek().unwrap().to_string();
 
+
     while let Some(line) = lines.next() {
         let current_line = line;
-        let numbers_in_line = find_numbers_in_line(current_line);
+        let numbers_in_line = find_numbers_in_line(0, current_line);
 
         if previous_line == current_line {
             let next_line = lines.peek().unwrap().to_string().clone();
@@ -86,34 +240,34 @@ fn sum_all_part_numbers(input: &str) -> i32 {
     accumulated_part_numbers
 }
 
-fn has_adjacent_symbol(current_line: &str, other_line: &str, string_number: &StringNumber) -> bool {
+fn has_adjacent_symbol(current_line: &str, other_line: &str, string_number: &GridNumber) -> bool {
     let chars_current = current_line.chars().collect::<Vec<char>>();
     let chars_other = other_line.chars().collect::<Vec<char>>();
     let line_len = other_line.len();
 
-    let start_index_modifier = match string_number.start_index {
+    let start_index_modifier = match string_number.column_start {
         0 => 0,
         _ => 1,
     };
-    let end_index_modifier = match string_number.end_index {
+    let end_index_modifier = match string_number.column_end {
         x if x == line_len => 0,
         _ => 2,
     };
 
     if start_index_modifier != 0
-        && SYMBOLS.contains(&chars_current[string_number.start_index - start_index_modifier])
+        && SYMBOLS.contains(&chars_current[string_number.column_start - start_index_modifier])
     {
         return true;
     }
 
     if end_index_modifier != 0
-        && SYMBOLS.contains(&chars_current[string_number.end_index + end_index_modifier - 1])
+        && SYMBOLS.contains(&chars_current[string_number.column_end + end_index_modifier - 1])
     {
         return true;
     }
 
-    let chars_slice = &chars_other[string_number.start_index - start_index_modifier
-        ..string_number.end_index + end_index_modifier];
+    let chars_slice = &chars_other[string_number.column_start - start_index_modifier
+        ..string_number.column_end + end_index_modifier];
 
     for char in chars_slice {
         if SYMBOLS.contains(char) {
@@ -124,15 +278,8 @@ fn has_adjacent_symbol(current_line: &str, other_line: &str, string_number: &Str
     false
 }
 
-#[derive(Debug)]
-struct StringNumber {
-    start_index: usize,
-    end_index: usize,
-    number: i32,
-}
-
-fn find_numbers_in_line(line_str: &str) -> Vec<StringNumber> {
-    let mut string_numbers: Vec<StringNumber> = Vec::new();
+fn find_numbers_in_line(line_index: usize, line_str: &str) -> Vec<GridNumber> {
+    let mut string_numbers: Vec<GridNumber> = Vec::new();
     let mut first_index_of_number: Option<usize> = None;
     let mut reading_number = false;
 
@@ -144,31 +291,34 @@ fn find_numbers_in_line(line_str: &str) -> Vec<StringNumber> {
             first_index_of_number = Some(i);
         } else if reading_number && is_line_end {
             if NUMBERS.contains(&char) {
-                string_numbers.push(StringNumber {
-                    start_index: first_index_of_number.unwrap(),
-                    end_index: i - 1,
+                string_numbers.push(GridNumber {
+                    column_start: first_index_of_number.unwrap(),
+                    column_end: i - 1,
                     number: line_str[first_index_of_number.unwrap()..i + 1]
                         .parse::<i32>()
                         .unwrap(),
+                    row: line_index,
                 });
             } else {
-                string_numbers.push(StringNumber {
-                    start_index: first_index_of_number.unwrap(),
-                    end_index: i - 1,
+                string_numbers.push(GridNumber {
+                    column_start: first_index_of_number.unwrap(),
+                    column_end: i - 1,
                     number: line_str[first_index_of_number.unwrap()..i]
                         .parse::<i32>()
                         .unwrap(),
+                    row: line_index,
                 });
             }
             first_index_of_number = None;
             reading_number = false;
         } else if reading_number && !NUMBERS.contains(&char) {
-            string_numbers.push(StringNumber {
-                start_index: first_index_of_number.unwrap(),
-                end_index: i - 1,
+            string_numbers.push(GridNumber {
+                column_start: first_index_of_number.unwrap(),
+                column_end: i - 1,
                 number: line_str[first_index_of_number.unwrap()..i]
                     .parse::<i32>()
                     .unwrap(),
+                row: line_index,
             });
             first_index_of_number = None;
             reading_number = false;
@@ -179,8 +329,8 @@ fn find_numbers_in_line(line_str: &str) -> Vec<StringNumber> {
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::{find_numbers_in_line, sum_all_part_numbers};
+mod tests_c1 {
+    use crate::{find_numbers_in_line, sum_all_part_numbers_c1};
 
     #[test]
     fn add50() {
@@ -188,7 +338,7 @@ mod tests {
                      ..$..$..\n\
                      13....14";
 
-        let result = sum_all_part_numbers(input);
+        let result = sum_all_part_numbers_c1(input);
 
         assert_eq!(result, 50);
     }
@@ -199,7 +349,7 @@ mod tests {
                      .24$-4..\n\
                      ......*.";
 
-        let result = sum_all_part_numbers(input);
+        let result = sum_all_part_numbers_c1(input);
 
         assert_eq!(result, 28);
     }
@@ -211,7 +361,7 @@ mod tests {
                      .1....1.\n\
                      $......$";
 
-        let result = sum_all_part_numbers(input);
+        let result = sum_all_part_numbers_c1(input);
 
         assert_eq!(result, 4);
     }
@@ -225,7 +375,7 @@ mod tests {
                      ...*.....................-...$.....%..431.........*...810.....840+.668..........*.......144=.............................../...........%627.\n\
                      ...890...497.........829.643....504..........465..502..............*........488...................787.184...601....215........-450..........";
 
-        let result = sum_all_part_numbers(input);
+        let result = sum_all_part_numbers_c1(input);
 
         assert_eq!(
             result,
@@ -277,7 +427,7 @@ mod tests {
             num1, num2, num3
         );
 
-        let result = sum_all_part_numbers(&input);
+        let result = sum_all_part_numbers_c1(&input);
 
         assert_eq!(result, num1 + num2 + num3);
     }
@@ -295,7 +445,7 @@ mod tests {
                      ...$.*....\n\
                      .664.598..";
 
-        let result = sum_all_part_numbers(input);
+        let result = sum_all_part_numbers_c1(input);
 
         assert_eq!(result, 4361);
     }
@@ -306,14 +456,14 @@ mod tests {
         let number2 = 633;
         let input = format!("..{}..{}.", number1, number2);
 
-        let result = find_numbers_in_line(&input);
+        let result = find_numbers_in_line(1, &input);
 
         assert_eq!(result.len(), 2);
-        assert_eq!(result[0].start_index, 2);
-        assert_eq!(result[0].end_index, 3);
+        assert_eq!(result[0].column_start, 2);
+        assert_eq!(result[0].column_end, 3);
         assert_eq!(result[0].number, number1);
-        assert_eq!(result[1].start_index, 6);
-        assert_eq!(result[1].end_index, 8);
+        assert_eq!(result[1].column_start, 6);
+        assert_eq!(result[1].column_end, 8);
         assert_eq!(result[1].number, number2);
     }
 
@@ -323,7 +473,7 @@ mod tests {
         let number2 = 12;
         let input = format!("{}..{}", number1, number2);
 
-        let result = find_numbers_in_line(&input);
+        let result = find_numbers_in_line(1, &input);
 
         assert_eq!(result.len(), 2);
         assert_eq!(result[0].number, number1);
