@@ -30,14 +30,14 @@ fn sum_all_gear_ratios_c2(input: &str) -> i32 {
     // - Connect gears with numbers from third line
     // - Mix and match?
 
-    let mut lines = input.lines().peekable();
+    let lines = input.lines().peekable();
     let mut accumulated_gear_ratios = 0;
 
     let mut line_index = 0;
     let mut gears: Vec<Gear> = Vec::new();
     let mut grid_numbers: Vec<GridNumber> = Vec::new();
 
-    while let Some(line) = lines.next() {
+    for line in lines {
         let gears_in_current_line = find_gears_in_line(line_index, line);
         let numbers_in_current_line = find_numbers_in_line(line_index, line);
 
@@ -47,9 +47,6 @@ fn sum_all_gear_ratios_c2(input: &str) -> i32 {
         line_index += 1;
     }
 
-    // println!("{:?}", gears);
-    // println!("{:?}", grid_numbers);
-
     for gear in gears {
         let adjacent_grid_numbers = gear.find_adjacent_grid_numbers(line_index, &grid_numbers);
 
@@ -57,7 +54,7 @@ fn sum_all_gear_ratios_c2(input: &str) -> i32 {
             accumulated_gear_ratios += adjacent_grid_numbers
                 .iter()
                 .map(|grid_number| grid_number.number)
-                .fold(1, |acc, x| acc * x);
+                .product::<i32>()
         }
     }
 
@@ -80,13 +77,11 @@ impl Gear {
 
         for grid_number in grid_numbers {
             let possible_coords = grid_number.get_possible_coords();
-            println!("Possible coords {:?}", possible_coords);
-            println!("Row: {:?} Column: {:?}", self.row, self.column);
 
             let is_start = self.row == 0;
             let is_end = self.row == lines_len;
             
-            if (!is_start && possible_coords.contains(&(self.row - 1, self.column - 1))) // NW
+            if !is_start && possible_coords.contains(&(self.row - 1, self.column - 1)) // NW
                 || (!is_start && (possible_coords.contains(&(self.row - 1, self.column)))) // N
                 || (!is_start && possible_coords.contains(&(self.row - 1, self.column + 1))) // NE
                 || possible_coords.contains(&(self.row, self.column + 1)) // E
@@ -95,12 +90,10 @@ impl Gear {
                 || (!is_end && possible_coords.contains(&(self.row + 1, self.column - 1))) // SW
                 || possible_coords.contains(&(self.row, self.column - 1)) // W
             {
-                println!("Grid number being pushed {:?}", grid_number);
-                adjacent_grid_numbers.push(grid_number.clone());
+                adjacent_grid_numbers.push(*grid_number);
             }
         }
 
-        println!("Grid numbers {:?}", adjacent_grid_numbers);
         adjacent_grid_numbers
     }
 }
@@ -141,12 +134,17 @@ mod tests_c2 {
 
     #[test]
     fn returns_possible_coords() {
-        let grid_number = GridNumber{ row: 0, column_start: 0, column_end: 1, number: 10 };
+        let grid_number = GridNumber {
+            row: 0,
+            column_start: 0,
+            column_end: 1,
+            number: 10,
+        };
 
         let result = grid_number.get_possible_coords();
 
-        assert!(result.contains(&(0,0)));
-        assert!(result.contains(&(0,1)));
+        assert!(result.contains(&(0, 0)));
+        assert!(result.contains(&(0, 1)));
     }
 
     #[test]
@@ -202,7 +200,6 @@ fn sum_all_part_numbers_c1(input: &str) -> i32 {
     let mut lines = input.lines().peekable();
     let mut accumulated_part_numbers = 0;
     let mut previous_line = lines.peek().unwrap().to_string();
-
 
     while let Some(line) = lines.next() {
         let current_line = line;
