@@ -2,22 +2,78 @@ mod parser;
 
 use std::{fs::read_to_string, i64};
 
-use crate::parser::parse_input;
+use parser::{parse_maps, parse_seeds_c1, parse_seeds_c2, Map};
 
 fn main() {
     let input = read_to_string("puzzle-input").unwrap();
 
     let result_challenge_1 = calculate_result_challenge_1(&input);
     println!("Result for challenge 1: {}", result_challenge_1);
+    let result_challenge_2 = calculate_result_challenge_2(&input);
+    println!("Result for challenge 2: {}", result_challenge_2);
+}
+
+fn calculate_result_challenge_2(input: &str) -> i64 {
+    let split_by_empty_line = input.split("\n\n").collect::<Vec<&str>>();
+    let seeds_str = split_by_empty_line[0].split(": ").collect::<Vec<&str>>()[1];
+
+    let seeds = parse_seeds_c2(seeds_str);
+    let maps = parse_maps(input);
+
+    let mut locations: Vec<i64> = Vec::new();
+    let mut counter: i64 = 0;
+
+    let amount = calculate_amount_of_seeds(seeds.clone());
+    println!("{:?}", amount);
+
+    for (seed_start, seed_end) in seeds {
+        for seed in seed_start..seed_end {
+            if counter % 100000 == 0 {
+                println!("Counter: {:?}", counter);
+            }
+
+            let mut current = seed;
+
+            for map in maps.iter() {
+                'outer: for map_entry in map.map_entries.iter() {
+                    if is_in_source(current, map_entry) {
+                        current = map_entry.destination_start + current - map_entry.source_start;
+                        break 'outer;
+                    }
+                }
+            }
+
+            counter += 1;
+
+            locations.push(current);
+        }
+    }
+
+    *locations.iter().min().unwrap()
+}
+
+fn calculate_amount_of_seeds(seeds: Vec<(i64, i64)>) -> i64 {
+    let mut amount: i64 = 0;
+
+    for (s, end) in seeds {
+        amount += end - s;
+    }
+
+    amount
 }
 
 fn calculate_result_challenge_1(input: &str) -> i64 {
-    let seeds_and_maps = parse_input(input);
+    let split_by_empty_line = input.split("\n\n").collect::<Vec<&str>>();
+    let seeds_str = split_by_empty_line[0].split(": ").collect::<Vec<&str>>()[1];
 
+    let seeds = parse_seeds_c1(seeds_str);
+    let maps = parse_maps(input);
+
+    find_nearest_locations(seeds, maps)
+}
+
+fn find_nearest_locations(seeds: Vec<i64>, maps: Vec<Map>) -> i64 {
     let mut locations: Vec<i64> = Vec::new();
-
-    let seeds = seeds_and_maps.seeds;
-    let maps = &seeds_and_maps.maps;
 
     for seed in seeds {
         let mut current = seed;
@@ -29,7 +85,6 @@ fn calculate_result_challenge_1(input: &str) -> i64 {
                     break 'outer;
                 }
             }
-
         }
         locations.push(current);
     }
