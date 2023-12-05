@@ -1,6 +1,6 @@
 mod parser;
 
-use std::fs::read_to_string;
+use std::{fs::read_to_string, i64};
 
 use crate::parser::parse_input;
 
@@ -11,32 +11,34 @@ fn main() {
     println!("Result for challenge 1: {}", result_challenge_1);
 }
 
-fn calculate_result_challenge_1(input: &str) -> u32 {
+fn calculate_result_challenge_1(input: &str) -> i64 {
     let seeds_and_maps = parse_input(input);
-    println!("Done Parsing");
 
-    let mut locations: Vec<u32> = Vec::new();
+    let mut locations: Vec<i64> = Vec::new();
 
     let seeds = seeds_and_maps.seeds;
     let maps = &seeds_and_maps.maps;
 
     for seed in seeds {
-        let mut current = match maps[0].get(&seed) {
-            Some(value) => value,
-            None => &seed,
-        };
+        let mut current = seed;
 
-        for map in maps.iter().skip(1) {
-            if let Some(value) = map.get(current) {
-                current = value;
+        for map in maps.iter() {
+            'outer: for map_entry in map.map_entries.iter() {
+                if is_in_source(current, map_entry) {
+                    current = map_entry.destination_start + current - map_entry.source_start;
+                    break 'outer;
+                }
             }
-        }
 
-        locations.push(*current);
-        println!("Pushed locations for seed");
+        }
+        locations.push(current);
     }
 
     *locations.iter().min().unwrap()
+}
+
+fn is_in_source(current: i64, map_entry: &parser::MapEntry) -> bool {
+    map_entry.source_start <= current && map_entry.source_start + map_entry.range >= current
 }
 
 #[cfg(test)]
