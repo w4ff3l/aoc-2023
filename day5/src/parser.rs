@@ -1,5 +1,3 @@
-use std::ops::Range;
-
 #[derive(Debug)]
 pub struct Map {
     pub map_entries: Vec<MapEntry>,

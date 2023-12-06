@@ -17,19 +17,21 @@ fn calculate_result_challenge_2(input: &str) -> i64 {
     let split_by_empty_line = input.split("\n\n").collect::<Vec<&str>>();
     let seeds_str = split_by_empty_line[0].split(": ").collect::<Vec<&str>>()[1];
 
-    let seeds = parse_seeds_c2(seeds_str);
+    let seed_ranges = parse_seeds_c2(seeds_str);
+    let seed_ranges_merged = merge_ranges(seed_ranges);
+
     let maps = parse_maps(input);
 
     let mut locations: Vec<i64> = Vec::new();
     let mut counter: i64 = 0;
 
-    let amount = calculate_amount_of_seeds(seeds.clone());
+    let amount = calculate_amount_of_seeds(seed_ranges_merged.clone());
     println!("{:?}", amount);
 
-    for (seed_start, seed_end) in seeds {
+    for (seed_start, seed_end) in seed_ranges_merged {
         for seed in seed_start..seed_end {
             if counter % 100000 == 0 {
-                println!("Counter: {:?}", counter);
+                println!("Progress: {:?}", counter);
             }
 
             let mut current = seed;
@@ -50,6 +52,29 @@ fn calculate_result_challenge_2(input: &str) -> i64 {
     }
 
     *locations.iter().min().unwrap()
+}
+
+fn merge_ranges(mut seed_ranges: Vec<(i64, i64)>) -> Vec<(i64, i64)> {
+    // Sort
+    seed_ranges.sort_by(|a, b| a.0.cmp(&b.0));
+
+    // Push first element into stack
+    let mut merged_ranges: Vec<(i64, i64)> = Vec::new();
+    merged_ranges.push(*seed_ranges.first().unwrap());
+
+    for seed_range in seed_ranges.iter().skip(1) {
+        // Update range on top of stack if ranges overlap
+        // Simply push range if ranges do not overlap
+        if merged_ranges.last().unwrap().1 > seed_range.0 {
+            let mut range_to_update = merged_ranges.pop().unwrap();
+            range_to_update.1 = seed_range.1;
+            merged_ranges.push(range_to_update);
+        } else {
+            merged_ranges.push(*seed_range);
+        }
+    }
+
+    merged_ranges
 }
 
 fn calculate_amount_of_seeds(seeds: Vec<(i64, i64)>) -> i64 {
@@ -98,7 +123,17 @@ fn is_in_source(current: i64, map_entry: &parser::MapEntry) -> bool {
 
 #[cfg(test)]
 mod tests_c1 {
-    use crate::calculate_result_challenge_1;
+    use crate::{calculate_result_challenge_1, merge_ranges};
+
+    #[test]
+    fn merges_ranges() {
+        let input = vec![(1, 2), (3, 5), (4, 9)];
+
+        let result = merge_ranges(input);
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[1], (3, 9));
+    }
 
     #[test]
     fn challenge_1_example_test() {
